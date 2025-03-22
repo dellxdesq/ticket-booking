@@ -8,10 +8,10 @@ import (
 )
 
 type TicketHandler struct {
-	storage *storage.MemoryStorage
+	storage *storage.PostgresStorage
 }
 
-func NewTicketHandler(storage *storage.MemoryStorage) *TicketHandler {
+func NewTicketHandler(storage *storage.PostgresStorage) *TicketHandler {
 	return &TicketHandler{storage: storage}
 }
 
@@ -36,7 +36,11 @@ func (h *TicketHandler) AddTicketTemplate(w http.ResponseWriter, r *http.Request
 	template.Title = event.Title
 	template.EventDate = event.Date
 
-	h.storage.AddTicketTemplate(template)
+	if err := h.storage.AddTicketTemplate(template); err != nil {
+		http.Error(w, "Ошибка добавления шаблона билета", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -46,7 +50,11 @@ func (h *TicketHandler) GetTickets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tickets := h.storage.GetAllTickets()
+	tickets, err := h.storage.GetAllTickets()
+	if err != nil {
+		http.Error(w, "Ошибка получения билетов", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tickets)
