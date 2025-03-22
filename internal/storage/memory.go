@@ -1,42 +1,95 @@
 package storage
 
 import (
+	"database/sql"
+	"fmt"
 	"sync"
 	"ticket-booking/internal/models"
 	"time"
+
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-type MemoryStorage struct {
-	events []models.Event
-	mu     sync.Mutex
+func (s *PostgresStorage) InitDB() error {
+	query := `
+	CREATE TABLE IF NOT EXISTS events (
+		id SERIAL PRIMARY KEY,
+		type VARCHAR(255),
+		title VARCHAR(255),
+		date TIMESTAMP,
+		tickets INT
+	);`
+
+	_, err := s.db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("ошибка при создании таблицы: %w", err)
+	}
+	return nil
 }
 
-func NewMemoryStorage() *MemoryStorage {
-	return &MemoryStorage{}
+type PostgresStorage struct {
+	db *sql.DB
+	mu sync.Mutex
 }
 
-func (s *MemoryStorage) AddEvent(event models.Event) {
+func NewPostgresStorage(dataSourceName string) (*PostgresStorage, error) {
+	db, err := sql.Open("pgx", dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+	return &PostgresStorage{db: db}, nil
+}
+
+func (s *PostgresStorage) AddEvent(event models.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	event.ID = len(s.events) + 1
-	s.events = append(s.events, event)
+
+	event.ID = 0
+	query := `INSERT INTO events (type, title, date, tickets) VALUES ($1, $2, $3, $4) RETURNING id`
+	err := s.db.QueryRow(query, event.Type, event.Title, event.Date, event.Tickets).Scan(&event.ID)
+	return err
 }
 
-func (s *MemoryStorage) GetEventsByDate(date time.Time) []models.Event {
+func (s *PostgresStorage) GetEventsByDate(date time.Time) ([]models.Event, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	var result []models.Event
-	for _, e := range s.events {
-		if e.Date.Format("2006-01-02") == date.Format("2006-01-02") {
-			result = append(result, e)
-		}
+	query := `SELECT id, type, title, date, tickets FROM events WHERE date::date = $1`
+	rows, err := s.db.Query(query, date.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
 	}
-	return result
+	defer rows.Close()
+
+	for rows.Next() {
+		var e models.Event
+		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.Date, &e.Tickets); err != nil {
+			return nil, err
+		}
+		result = append(result, e)
+	}
+	return result, nil
 }
 
-func (s *MemoryStorage) GetAllEvents() []models.Event {
+func (s *PostgresStorage) GetAllEvents() ([]models.Event, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.events
+
+	var result []models.Event
+	query := `SELECT id, type, title, date, tickets FROM events`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e models.Event
+		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.Date, &e.Tickets); err != nil {
+			return nil, err
+		}
+		result = append(result, e)
+	}
+	return result, nil
 }
