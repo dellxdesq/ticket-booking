@@ -9,10 +9,10 @@ import (
 )
 
 type EventHandler struct {
-	storage *storage.MemoryStorage
+	storage *storage.PostgresStorage
 }
 
-func NewEventHandler(storage *storage.MemoryStorage) *EventHandler {
+func NewEventHandler(storage *storage.PostgresStorage) *EventHandler {
 	return &EventHandler{storage: storage}
 }
 
@@ -42,9 +42,9 @@ func (h *EventHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Некорректный формат даты", http.StatusBadRequest)
 			return
 		}
-		events = h.storage.GetEventsByDate(date)
+		events, _ = h.storage.GetEventsByDate(date)
 	} else {
-		events = h.storage.GetAllEvents()
+		events, _ = h.storage.GetAllEvents()
 	}
 
 	w.Header().Set("Content-Type", "application/json")
