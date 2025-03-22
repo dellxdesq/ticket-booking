@@ -7,8 +7,9 @@ import (
 )
 
 type MemoryStorage struct {
-	events []models.Event
-	mu     sync.Mutex
+	events          []models.Event
+	ticketTemplates []models.TicketTemplate
+	mu              sync.Mutex
 }
 
 func NewMemoryStorage() *MemoryStorage {
@@ -39,4 +40,42 @@ func (s *MemoryStorage) GetAllEvents() []models.Event {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.events
+}
+
+func (s *MemoryStorage) AddTicketTemplate(template models.TicketTemplate) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	template.ID = len(s.ticketTemplates) + 1
+	s.ticketTemplates = append(s.ticketTemplates, template)
+}
+
+func (s *MemoryStorage) GetTemplatesByEvent(eventID int) []models.TicketTemplate {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var result []models.TicketTemplate
+	for _, t := range s.ticketTemplates {
+		if t.EventID == eventID {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+func (s *MemoryStorage) GetEventByID(eventID int) (models.Event, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, e := range s.events {
+		if e.ID == eventID {
+			return e, true
+		}
+	}
+	return models.Event{}, false
+}
+
+func (s *MemoryStorage) GetAllTickets() []models.TicketTemplate {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.ticketTemplates
 }
