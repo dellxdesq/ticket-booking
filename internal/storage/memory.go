@@ -9,23 +9,6 @@ import (
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
-//ticketTemplates []models.TicketTemplate
-func (s *PostgresStorage) InitDB() error {
-	query := `
-	CREATE TABLE IF NOT EXISTS events (
-		id SERIAL PRIMARY KEY,
-		type VARCHAR(255),
-		title VARCHAR(255),
-		date TIMESTAMP,
-		tickets INT
-	);`
-
-	_, err := s.db.Exec(query)
-	if err != nil {
-		return fmt.Errorf("ошибка при создании таблицы: %w", err)
-	}
-	return nil
-}
 
 type PostgresStorage struct {
 	db *sql.DB
@@ -40,6 +23,43 @@ func NewPostgresStorage(dataSourceName string) (*PostgresStorage, error) {
 	return &PostgresStorage{db: db}, nil
 }
 
+func (s *PostgresStorage) InitDB() error {
+	eventQuery := `
+	CREATE TABLE IF NOT EXISTS events (
+		id SERIAL PRIMARY KEY,
+		type VARCHAR(255),
+		title VARCHAR(255),
+		date TIMESTAMP,
+		tickets INT
+	);`
+
+	_, err := s.db.Exec(eventQuery)
+	if err != nil {
+		return fmt.Errorf("ошибка при создании таблицы событий: %w", err)
+	}
+
+	ticketQuery := `
+	CREATE TABLE IF NOT EXISTS tickets (
+		id SERIAL PRIMARY KEY,
+		event_id INT REFERENCES events(id),
+		title VARCHAR(255),
+		event_date TIMESTAMP,
+		price DECIMAL,
+		row INT,
+		seat INT,
+		zone VARCHAR(255),
+		location VARCHAR(255),
+		ticket_number INT
+	);`
+
+	_, err = s.db.Exec(ticketQuery)
+	if err != nil {
+		return fmt.Errorf("ошибка при создании таблицы билетов: %w", err)
+	}
+
+	return nil
+}
+
 func (s *PostgresStorage) AddEvent(event models.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -48,6 +68,22 @@ func (s *PostgresStorage) AddEvent(event models.Event) error {
 	query := `INSERT INTO events (type, title, date, tickets) VALUES ($1, $2, $3, $4) RETURNING id`
 	err := s.db.QueryRow(query, event.Type, event.Title, event.Date, event.Tickets).Scan(&event.ID)
 	return err
+}
+
+func (s *PostgresStorage) GetEventByID(eventID int) (models.Event, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var e models.Event
+	query := `SELECT id, type, title, date, tickets FROM events WHERE id = $1`
+	err := s.db.QueryRow(query, eventID).Scan(&e.ID, &e.Type, &e.Title, &e.Date, &e.Tickets)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Event{}, false
+		}
+		return models.Event{}, false
+	}
+	return e, true
 }
 
 func (s *PostgresStorage) GetEventsByDate(date time.Time) ([]models.Event, error) {
@@ -93,41 +129,34 @@ func (s *PostgresStorage) GetAllEvents() ([]models.Event, error) {
 	}
 	return result, nil
 }
-//тут пересечение
-func (s *MemoryStorage) AddTicketTemplate(template models.TicketTemplate) {
+
+func (s *PostgresStorage) AddTicketTemplate(template models.TicketTemplate) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	template.ID = len(s.ticketTemplates) + 1
-	s.ticketTemplates = append(s.ticketTemplates, template)
+
+	query := `INSERT INTO tickets (event_id, title, event_date, price, row, seat, zone, location, ticket_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
+	_, err := s.db.Exec(query, template.EventID, template.Title, template.EventDate, template.Price, template.Row, template.Seat, template.Zone, template.Location, template.TicketNumber)
+	return err
 }
 
-func (s *MemoryStorage) GetTemplatesByEvent(eventID int) []models.TicketTemplate {
+func (s *PostgresStorage) GetAllTickets() ([]models.TicketTemplate, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	var result []models.TicketTemplate
-	for _, t := range s.ticketTemplates {
-		if t.EventID == eventID {
-			result = append(result, t)
-		}
+	query := `SELECT id, event_id, title, event_date, price, row, seat, zone, location, ticket_number FROM tickets`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
 	}
-	return result
-}
+	defer rows.Close()
 
-func (s *MemoryStorage) GetEventByID(eventID int) (models.Event, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for _, e := range s.events {
-		if e.ID == eventID {
-			return e, true
+	for rows.Next() {
+		var t models.TicketTemplate
+		if err := rows.Scan(&t.ID, &t.EventID, &t.Title, &t.EventDate, &t.Price, &t.Row, &t.Seat, &t.Zone, &t.Location, &t.TicketNumber); err != nil {
+			return nil, err
 		}
+		result = append(result, t)
 	}
-	return models.Event{}, false
-}
-
-func (s *MemoryStorage) GetAllTickets() []models.TicketTemplate {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.ticketTemplates
+	return result, nil
 }
