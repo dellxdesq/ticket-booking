@@ -9,7 +9,7 @@ import (
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
-
+//ticketTemplates []models.TicketTemplate
 func (s *PostgresStorage) InitDB() error {
 	query := `
 	CREATE TABLE IF NOT EXISTS events (
@@ -92,4 +92,42 @@ func (s *PostgresStorage) GetAllEvents() ([]models.Event, error) {
 		result = append(result, e)
 	}
 	return result, nil
+}
+//тут пересечение
+func (s *MemoryStorage) AddTicketTemplate(template models.TicketTemplate) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	template.ID = len(s.ticketTemplates) + 1
+	s.ticketTemplates = append(s.ticketTemplates, template)
+}
+
+func (s *MemoryStorage) GetTemplatesByEvent(eventID int) []models.TicketTemplate {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var result []models.TicketTemplate
+	for _, t := range s.ticketTemplates {
+		if t.EventID == eventID {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+func (s *MemoryStorage) GetEventByID(eventID int) (models.Event, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, e := range s.events {
+		if e.ID == eventID {
+			return e, true
+		}
+	}
+	return models.Event{}, false
+}
+
+func (s *MemoryStorage) GetAllTickets() []models.TicketTemplate {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.ticketTemplates
 }
