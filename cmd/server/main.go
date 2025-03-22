@@ -8,7 +8,17 @@ import (
 )
 
 func main() {
-	store := storage.NewMemoryStorage()
+	// Замените строку подключения на вашу
+	dataSourceName := "postgres://postgres:@localhost:5432/afishadb?sslmode=disable"
+	store, err := storage.NewPostgresStorage(dataSourceName)
+	if err != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	}
+
+	if err := store.InitDB(); err != nil {
+		log.Fatalf("Ошибка инициализации базы данных: %v", err)
+	}
+
 	eventHandler := handlers.NewEventHandler(store)
 
 	http.HandleFunc("/events", eventHandler.GetEvents)
