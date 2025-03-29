@@ -1,15 +1,33 @@
 package main
 
 import (
+	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
+	"os"
+
+	_ "os"
 	"ticket-booking/internal/handlers"
 	"ticket-booking/internal/storage"
+
+	_ "github.com/joho/godotenv"
 )
 
 func main() {
-	// Замените строку подключения на вашу
-	dataSourceName := "postgres://postgres:@localhost:5432/afishadb?sslmode=disable"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Ошибка загрузки .env файла")
+	}
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+	dbSSLMode := os.Getenv("DB_SSLMODE")
+
+	dataSourceName := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		dbUser, dbPassword, dbHost, dbPort, dbName, dbSSLMode)
 	store, err := storage.NewPostgresStorage(dataSourceName)
 	if err != nil {
 		log.Fatalf("Ошибка подключения к базе данных: %v", err)
