@@ -3,7 +3,6 @@ package storage
 import (
 	"database/sql"
 	"fmt"
-	"sync"
 	"ticket-booking/internal/models"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 
 type PostgresStorage struct {
 	db *sql.DB
-	mu sync.Mutex
 }
 
 func NewPostgresStorage(dataSourceName string) (*PostgresStorage, error) {
@@ -61,9 +59,6 @@ func (s *PostgresStorage) InitDB() error {
 }
 
 func (s *PostgresStorage) AddEvent(event models.Event) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	event.ID = 0
 	query := `INSERT INTO events (type, title, date, tickets) VALUES ($1, $2, $3, $4) RETURNING id`
 	err := s.db.QueryRow(query, event.Type, event.Title, event.Date, event.Tickets).Scan(&event.ID)
@@ -71,8 +66,6 @@ func (s *PostgresStorage) AddEvent(event models.Event) error {
 }
 
 func (s *PostgresStorage) GetEventByID(eventID int) (models.Event, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	var e models.Event
 	query := `SELECT id, type, title, date, tickets FROM events WHERE id = $1`
@@ -87,8 +80,6 @@ func (s *PostgresStorage) GetEventByID(eventID int) (models.Event, bool) {
 }
 
 func (s *PostgresStorage) GetEventsByDate(date time.Time) ([]models.Event, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	var result []models.Event
 	query := `SELECT id, type, title, date, tickets FROM events WHERE date::date = $1`
@@ -109,8 +100,6 @@ func (s *PostgresStorage) GetEventsByDate(date time.Time) ([]models.Event, error
 }
 
 func (s *PostgresStorage) GetAllEvents() ([]models.Event, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	var result []models.Event
 	query := `SELECT id, type, title, date, tickets FROM events`
@@ -131,8 +120,6 @@ func (s *PostgresStorage) GetAllEvents() ([]models.Event, error) {
 }
 
 func (s *PostgresStorage) AddTicketTemplate(template models.TicketTemplate) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	query := `INSERT INTO tickets (event_id, title, event_date, price, row, seat, zone, location, ticket_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
 	_, err := s.db.Exec(query, template.EventID, template.Title, template.EventDate, template.Price, template.Row, template.Seat, template.Zone, template.Location, template.TicketNumber)
@@ -140,8 +127,6 @@ func (s *PostgresStorage) AddTicketTemplate(template models.TicketTemplate) erro
 }
 
 func (s *PostgresStorage) GetAllTickets() ([]models.TicketTemplate, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	var result []models.TicketTemplate
 	query := `SELECT id, event_id, title, event_date, price, row, seat, zone, location, ticket_number FROM tickets`
