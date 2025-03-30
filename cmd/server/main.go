@@ -37,11 +37,14 @@ func main() {
 		log.Fatalf("Ошибка инициализации базы данных: %v", err)
 	}
 
+	orderHandler := handlers.NewOrderHandler(store)
 	eventHandler := handlers.NewEventHandler(store)
 	ticketHandler := handlers.NewTicketHandler(store)
 
 	http.HandleFunc("/events", eventHandler.GetEvents)
 	http.HandleFunc("/events/add", eventHandler.AddEvent)
+	http.HandleFunc("/events/{event_id}/seats", orderHandler.GetAvailableSeatsHandler)   //TODO реализовать методы вычисления свобоных мест вместо заглушки
+	http.HandleFunc("/events/{event_id}/tickets/order", orderHandler.CreateOrderHandler) //TODO реализовать реальный заказ билета вместо заглушки
 	http.HandleFunc("/tickets/add", ticketHandler.AddTicketTemplate)
 	http.HandleFunc("/tickets", ticketHandler.GetTickets)
 
