@@ -48,6 +48,12 @@ func main() {
 	http.HandleFunc("/tickets/add", ticketHandler.AddTicketTemplate)
 	http.HandleFunc("/tickets", ticketHandler.GetTickets)
 
+	//ошибка badRequest
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		http.ServeFile(w, r, "static/error404.png")
+		w.WriteHeader(http.StatusNotFound)
+	})
 	log.Println("Сервер запущен на :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
