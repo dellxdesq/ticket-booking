@@ -48,6 +48,8 @@ func main() {
 	http.HandleFunc("/tickets/add", ticketHandler.AddTicketTemplate)
 	http.HandleFunc("/tickets", ticketHandler.GetTickets)
 
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+
 	//ошибка badRequest
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")

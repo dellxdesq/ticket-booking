@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"ticket-booking/internal/models"
 	"ticket-booking/internal/storage"
@@ -17,15 +18,31 @@ func NewEventHandler(storage *storage.PostgresStorage) *EventHandler {
 }
 
 func (h *EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+	var rawEvent struct {
+		Type    string `json:"type"`
+		Title   string `json:"title"`
+		Date    string `json:"date"`
+		Tickets int    `json:"tickets"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&rawEvent); err != nil {
+		log.Println("Ошибка декодирования JSON:", err)
+		http.Error(w, "Ошибка парсинга JSON", http.StatusBadRequest)
 		return
 	}
 
-	var event models.Event
-	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		http.Error(w, "Ошибка парсинга JSON", http.StatusBadRequest)
+	parsedDate, err := time.Parse("2006-01-02", rawEvent.Date)
+	if err != nil {
+		log.Println("Ошибка парсинга даты:", err)
+		http.Error(w, "Некорректный формат даты", http.StatusBadRequest)
 		return
+	}
+
+	event := models.Event{
+		Type:    rawEvent.Type,
+		Title:   rawEvent.Title,
+		Date:    parsedDate,
+		Tickets: rawEvent.Tickets,
 	}
 
 	h.storage.AddEvent(event)
