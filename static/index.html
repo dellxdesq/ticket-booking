@@ -7,11 +7,10 @@
     <style>
         body { font-family: Arial, sans-serif; }
         .event { margin-bottom: 20px; }
-        .hidden { display: none; }
     </style>
 </head>
 <body>
-<h1>Создать мероприятие</h1>
+<h1>Создание мероприятия</h1>
 <form id="eventForm">
     <label>Название: <input type="text" id="eventTitle" required></label><br>
     <label>Тип: <input type="text" id="eventType" required></label><br>
@@ -21,21 +20,8 @@
 </form>
 
 <h1>Список мероприятий</h1>
-<button onclick="fetchEvents()">Получить мероприятия</button>
+<button onclick="fetchEvents()">Просмотреть все доступные</button>
 <div id="events"></div>
-
-<div id="ticketFormContainer" class="hidden">
-    <h2>Создать шаблон билета</h2>
-    <form id="ticketForm">
-        <input type="hidden" id="eventId">
-        <label>Цена: <input type="number" id="price" required></label><br>
-        <label>Зона: <input type="text" id="zone"></label><br>
-        <label>Количество рядов: <input type="number" id="rows"></label><br>
-        <label>Мест в ряду: <input type="number" id="seats"></label><br>
-        <label>Мест всего: <input type="number" id="totalSeats"></label><br>
-        <button type="submit">Создать билет</button>
-    </form>
-</div>
 
 <script>
     document.getElementById('eventForm').addEventListener('submit', function(event) {
@@ -73,56 +59,18 @@
                     const eventEl = document.createElement('div');
                     eventEl.className = 'event';
                     eventEl.innerHTML = `
-                            <h3>${event.title}</h3>
-                            <p>Дата: ${event.date}</p>
-                            <button onclick="showTicketForm(${event.id})">Создать билет</button>
-                        `;
+                        <h3>${event.title}</h3>
+                        <p>Дата: ${event.date}</p>
+                        <button onclick="redirectToCreateTicket(${event.id}, '${event.date}')">Создать шаблон билета</button>
+                    `;
                     eventsDiv.appendChild(eventEl);
                 });
             });
     }
 
-    function showTicketForm(eventId) {
-        document.getElementById('eventId').value = eventId;
-        document.getElementById('ticketFormContainer').classList.remove('hidden');
+    function redirectToCreateTicket(eventId, eventDate) {
+        window.location.href = `create_ticket.html?eventId=${eventId}&eventDate=${eventDate}`;
     }
-
-    document.getElementById('ticketForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-
-        const eventId = document.getElementById('eventId').value;
-        const price = parseFloat(document.getElementById('price').value);
-        const zone = document.getElementById('zone').value || null;
-        const rows = document.getElementById('rows').value ? parseInt(document.getElementById('rows').value) : null;
-        const seats = document.getElementById('seats').value ? parseInt(document.getElementById('seats').value) : null;
-        const totalSeats = document.getElementById('totalSeats').value ? parseInt(document.getElementById('totalSeats').value) : null;
-
-        const ticketData = {
-            event_id: eventId,
-            price: price,
-            zone: zone,
-            row: rows,
-            seat: seats,
-            ticket_number: totalSeats
-        };
-
-
-        console.log('Отправляемые данные:', ticketData); // Добавим вывод данных в консоль для проверки
-
-        fetch('/tickets/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(ticketData)
-        }).then(response => {
-            if (response.ok) {
-                alert('Билет успешно создан!');
-                document.getElementById('ticketForm').reset();
-                document.getElementById('ticketFormContainer').classList.add('hidden');
-            } else {
-                alert('Ошибка при создании билета');
-            }
-        });
-    });
 </script>
 </body>
 </html>

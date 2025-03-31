@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"ticket-booking/internal/models"
 	"ticket-booking/internal/storage"
+	"time"
 )
 
 type TicketHandler struct {
@@ -23,6 +25,7 @@ func (h *TicketHandler) AddTicketTemplate(w http.ResponseWriter, r *http.Request
 
 	var template models.TicketTemplate
 	if err := json.NewDecoder(r.Body).Decode(&template); err != nil {
+		log.Println("Ошибка декодирования JSON:", err)
 		http.Error(w, "Ошибка парсинга JSON", http.StatusBadRequest)
 		return
 	}
@@ -33,8 +36,15 @@ func (h *TicketHandler) AddTicketTemplate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	parsedDate, err := time.Parse("2006-01-02", event.Date.Format("2006-01-02"))
+	if err != nil {
+		log.Println("Ошибка парсинга даты события:", err)
+		http.Error(w, "Некорректный формат даты", http.StatusBadRequest)
+		return
+	}
+
 	template.Title = event.Title
-	template.EventDate = event.Date
+	template.EventDate = parsedDate
 
 	if err := h.storage.AddTicketTemplate(template); err != nil {
 		http.Error(w, "Ошибка добавления шаблона билета", http.StatusInternalServerError)
