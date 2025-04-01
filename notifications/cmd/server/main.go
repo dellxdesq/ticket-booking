@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net"
@@ -31,22 +32,35 @@ func sendEmail(to, subject, body string) error {
 	err := godotenv.Load("../../../.env")
 	if err != nil {
 		log.Println("Ошибка загрузки .env файла:", err)
+		return err
 	}
 
 	smtpHost := os.Getenv("SMTP_HOST")
-	fmt.Println(smtpHost)
 	smtpPort := os.Getenv("SMTP_PORT")
-	fmt.Println(smtpPort)
 	smtpUser := os.Getenv("SMTP_USER")
-
 	smtpPassword := os.Getenv("SMTP_PASSWORD")
 
+	if smtpHost == "" || smtpPort == "" || smtpUser == "" || smtpPassword == "" {
+		log.Println("Ошибка: Отсутствуют параметры SMTP в .env файле")
+		return fmt.Errorf("не заданы SMTP параметры")
+	}
+
 	from := smtpUser
-	msg := []byte("To: " + to + "\r\n" +
-		"Subject: " + subject + "\r\n" +
-		"\r\n" + body + "\r\n")
+
+	encodedSubject := "=?UTF-8?B?" + base64.StdEncoding.EncodeToString([]byte(subject)) + "?="
+
+	msg := []byte(
+		"From: " + from + "\r\n" +
+			"To: " + to + "\r\n" +
+			"Subject: " + encodedSubject + "\r\n" +
+			"MIME-Version: 1.0\r\n" +
+			"Content-Type: text/plain; charset=\"UTF-8\"\r\n" +
+			"\r\n" + body + "\r\n",
+	)
 
 	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
+
+	log.Printf("Отправка email: to=%s, subject=%s", to, subject)
 
 	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{to}, msg)
 	if err != nil {
@@ -54,7 +68,7 @@ func sendEmail(to, subject, body string) error {
 		return err
 	}
 
-	log.Printf("Email отправлен на %s", to)
+	log.Printf("Email успешно отправлен на %s", to)
 	return nil
 }
 

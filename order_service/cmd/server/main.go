@@ -44,7 +44,9 @@ func sendNotification(email string, eventID int64, zone string, row, seat int64)
 	client := nt.NewNotificationServiceClient(conn)
 
 	subject := "Подтверждение бронирования"
-	body := fmt.Sprintf("Ваш билет на мероприятие %d, зона %s, ряд %d, место %d подтвержден!", eventID, zone, row, seat)
+	body := fmt.Sprintf("Здравствуйте! Спасибо за покупку билетов. Ваш билет на мероприятие %d, зона %s, ряд %d, место %d подтвержден!", eventID, zone, row, seat)
+
+	log.Printf("Отправка email: to=%s, subject=%s", email, subject)
 
 	_, err = client.SendEmail(context.Background(), &nt.EmailRequest{
 		Email:   email,
