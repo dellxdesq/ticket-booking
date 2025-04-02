@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
+	"ticket-booking/order_service/internal/storage"
 	pb "ticket-booking/proto/grpc/order"
 
 	"google.golang.org/grpc"
@@ -13,6 +15,7 @@ import (
 
 type orderServer struct {
 	pb.UnimplementedOrderServiceServer
+	store *storage.Storage
 }
 
 func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (*pb.CreateOrderResponse, error) {
@@ -22,8 +25,45 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 	seat := req.Seat
 	email := req.Email
 
-	// Логика бронирования (имитация)
-	log.Printf("Заказ: eventID=%d, zone=%s, row=%d, seat=%d, email=%s", eventID, zone, row, seat, email)
+	existsZone, existsRow, existsSeat, err := s.store.CheckEventStructure(eventID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка проверки структуры события: %w", err)
+	}
+
+	//сколько надо ввести параметров
+	expectedFields := 0
+	if existsZone {
+		expectedFields++
+	}
+	if existsRow {
+		expectedFields++
+	}
+	if existsSeat {
+		expectedFields++
+	}
+
+	//ввёдённые параметры в json
+	providedFields := 0
+	if zone != "" {
+		providedFields++
+	}
+	if row != 0 {
+		providedFields++
+	}
+	if seat != 0 {
+		providedFields++
+	}
+
+	if expectedFields != providedFields {
+		return nil, fmt.Errorf("неверное количество параметров: ожидается %d, получено %d", expectedFields, providedFields)
+	}
+
+	err = s.store.CreateOrder(eventID, zone, row, seat, email)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось создать заказ: %w", err)
+	}
+
+	log.Printf("Заказ создан: eventID=%d, zone=%s, row=%d, seat=%d, email=%s", eventID, zone, row, seat, email)
 
 	return &pb.CreateOrderResponse{
 		Status: fmt.Sprintf("Заказ для события %d, зона %s, ряд %d, место %d успешно создан.", eventID, zone, row, seat),
@@ -33,21 +73,9 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 func (s *orderServer) GetAvailableSeats(ctx context.Context, req *pb.GetAvailableSeatsRequest) (*pb.GetAvailableSeatsResponse, error) {
 	eventID := req.EventId
 
-	// Эмуляция данных, вместо этого должен быть запрос в БД.
-	seatsData := []*pb.Zone{
-		{
-			Name: "A",
-			Rows: []*pb.Row{
-				{Number: 1, Seats: []int64{1, 2, 3, 4, 5, 6, 7, 10, 14, 15}},
-				{Number: 4, Seats: []int64{12, 13, 14, 15}},
-			},
-		},
-		{
-			Name: "B",
-			Rows: []*pb.Row{
-				{Number: 1, Seats: []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}},
-			},
-		},
+	seatsData, err := s.store.GetAvailableSeats(eventID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения мест: %w", err)
 	}
 
 	return &pb.GetAvailableSeatsResponse{
@@ -57,13 +85,22 @@ func (s *orderServer) GetAvailableSeats(ctx context.Context, req *pb.GetAvailabl
 }
 
 func main() {
+	connStr := "postgres://postgres:@localhost:5432/afishadb?sslmode=disable"
+	db, err := sql.Open("pgx", connStr)
+	if err != nil {
+		log.Fatalf("Ошибка подключения к БД: %v", err)
+	}
+	defer db.Close()
+
+	store := &storage.Storage{DB: db}
+
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("Ошибка создания слушателя: %v", err)
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterOrderServiceServer(grpcServer, &orderServer{})
+	pb.RegisterOrderServiceServer(grpcServer, &orderServer{store: store})
 	reflection.Register(grpcServer)
 	log.Println("Order Service запущен на порту :50051")
 	if err := grpcServer.Serve(lis); err != nil {
