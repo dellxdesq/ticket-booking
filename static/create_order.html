@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бронирование билета</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .hidden { display: none; }
+        .container { max-width: 400px; margin: auto; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Бронирование билета</h2>
+
+    <form id="orderForm">
+        <label for="eventId">ID мероприятия:</label>
+        <input type="number" id="eventId" required readonly><br>
+
+        <label for="zone">Зона:</label>
+        <input type="text" id="zone"><br>
+
+        <label for="row">Ряд:</label>
+        <input type="number" id="row"><br>
+
+        <label for="seat">Место:</label>
+        <input type="number" id="seat"><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" required><br>
+
+        <button type="submit">Забронировать</button>
+    </form>
+    <p id="status"></p>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get("eventId");
+        if (eventId) {
+            document.getElementById("eventId").value = eventId;
+        }
+    });
+
+    document.getElementById('orderForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const eventId = document.getElementById('eventId').value;
+        const zone = document.getElementById('zone').value || null;
+        const row = document.getElementById('row').value ? parseInt(document.getElementById('row').value, 10) : null;
+        const seat = document.getElementById('seat').value ? parseInt(document.getElementById('seat').value, 10) : null;
+        const email = document.getElementById('email').value;
+
+        const orderData = { zone, row, seat, email };
+
+        fetch(`/events/${eventId}/tickets/order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('status').innerText = 'Билет успешно забронирован!';
+                    document.getElementById('orderForm').reset();
+                } else {
+                    document.getElementById('status').innerText = 'Ошибка при бронировании билета';
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                document.getElementById('status').innerText = 'Ошибка сети';
+            });
+    });
+</script>
+</body>
+</html>

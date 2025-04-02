@@ -5,24 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Создать билет</title>
     <style>
-        body { font-family: Arial, sans-serif; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .hidden { display: none; }
+        .container { max-width: 400px; margin: auto; }
     </style>
 </head>
 <body>
+<div class="container">
 <h2>Создание шаблона билета</h2>
-<form id="ticketForm">
-    <input type="hidden" id="eventId">
-    <label>Цена: <input type="number" id="price" required></label><br>
-    <label>Зоны: <input type="text" id="zone"></label><br>
-    <label>Название мероприятия: <input type="text" id="title"></label><br>
-    <label>Место проведения: <input type="text" id="location"></label><br>
-    <label>Количество рядов: <input type="number" id="rows"></label><br>
-    <label>Мест в ряду: <input type="number" id="seats"></label><br>
-    <label>Мест всего: <input type="number" id="totalSeats"></label><br>
-    <label>Дата мероприятия: <input type="date" id="eventDate" disabled></label><br> <!-- Дата будет автозаполняться -->
-    <button type="submit">Создать билет</button>
-</form>
-
+    <form id="ticketForm">
+        <input type="hidden" id="eventId">
+        <label>Цена: <input type="number" id="price" required></label><br>
+        <label>Зоны: <input type="text" id="zone"></label><br>
+        <label>Название мероприятия: <input type="text" id="title"></label><br>
+        <label>Место проведения: <input type="text" id="location"></label><br>
+        <label>Количество рядов: <input type="number" id="rows"></label><br>
+        <label>Мест в ряду: <input type="number" id="seats"></label><br>
+        <label>Мест всего: <input type="number" id="totalSeats"></label><br>
+        <label>Дата мероприятия: <input type="date" id="eventDate" disabled></label><br> <!-- Дата будет автозаполняться -->
+        <button type="submit">Создать билет</button>
+    </form>
+</div>
 <script>
     const urlParams = new URLSearchParams(window.location.search);
     const eventId = urlParams.get('eventId');

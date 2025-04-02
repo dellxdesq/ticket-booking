@@ -7,21 +7,24 @@
     <style>
         body { font-family: Arial, sans-serif; }
         .event { margin-bottom: 20px; }
+        .hidden { display: none; }
+        .container { max-width: 400px; margin: auto; }
     </style>
 </head>
 <body>
-<h1>Создание мероприятия</h1>
-<form id="eventForm">
-    <label>Название: <input type="text" id="eventTitle" required></label><br>
-    <label>Тип: <input type="text" id="eventType" required></label><br>
-    <label>Дата: <input type="date" id="eventDate" required></label><br>
-    <label>Количество билетов: <input type="number" id="eventTickets" required></label><br>
-    <button type="submit">Создать мероприятие</button>
-</form>
-
-<h1>Список мероприятий</h1>
-<button onclick="fetchEvents()">Просмотреть все доступные</button>
-<div id="events"></div>
+<div class="container">
+    <h1>Создание мероприятия</h1>
+    <form id="eventForm">
+        <label>Название: <input type="text" id="eventTitle" required></label><br>
+        <label>Тип: <input type="text" id="eventType" required></label><br>
+        <label>Дата: <input type="date" id="eventDate" required></label><br>
+        <label>Количество билетов: <input type="number" id="eventTickets" required></label><br>
+        <button type="submit">Создать мероприятие</button>
+    </form>
+    <h1>Список мероприятий</h1>
+    <button onclick="fetchEvents()">Просмотреть все доступные</button>
+    <div id="events"></div>
+</div>
 
 <script>
     document.getElementById('eventForm').addEventListener('submit', function(event) {
@@ -62,6 +65,7 @@
                         <h3>${event.title}</h3>
                         <p>Дата: ${event.date}</p>
                         <button onclick="redirectToCreateTicket(${event.id}, '${event.date}')">Создать шаблон билета</button>
+                        <button onclick="redirectToOrder(${event.id})">Забронировать билет</button>
                     `;
                     eventsDiv.appendChild(eventEl);
                 });
@@ -70,6 +74,10 @@
 
     function redirectToCreateTicket(eventId, eventDate) {
         window.location.href = `create_ticket.html?eventId=${eventId}&eventDate=${eventDate}`;
+    }
+
+    function redirectToOrder(eventId) {
+        window.location.href = `create_order.html?eventId=${eventId}`;
     }
 </script>
 </body>
