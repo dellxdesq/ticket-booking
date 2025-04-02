@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  main_service:
+    build:
+      context: ./main_service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - order_service
+      - notifications
+    env_file:
+      - main_service/.env
+    networks:
+      - backend
+
+  order_service:
+    build:
+      context: ./order_service
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    depends_on:
+      - db
+    env_file:
+      - order_service/.env
+    networks:
+      - backend
+
+  notifications:
+    build:
+      context: ./notifications
+      dockerfile: Dockerfile
+    ports:
+      - "50052:50052"
+    depends_on:
+      - db
+    env_file:
+      - notifications/.env
+    networks:
+      - backend
+
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: afishadb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  pgdata:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./data/postgres
+      o: bind

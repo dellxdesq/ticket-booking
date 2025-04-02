@@ -131,7 +131,7 @@ func (s *Storage) CreateOrder(eventID int64, zone string, row int64, seat int64,
 	return nil
 }
 
-// чекаю на NULL в полях tickets(if,kjy ,bktnf)
+// чекаю на NULL в полях tickets
 func (s *Storage) CheckEventStructure(eventID int64) (existsZone bool, existsRow bool, existsSeat bool, err error) {
 	query := `
 		SELECT 
