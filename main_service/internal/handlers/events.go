@@ -19,10 +19,10 @@ func NewEventHandler(storage *storage.PostgresStorage) *EventHandler {
 
 func (h *EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 	var rawEvent struct {
-		Type    string `json:"type"`
-		Title   string `json:"title"`
-		Date    string `json:"date"`
-		Tickets int    `json:"tickets"`
+		Type     string `json:"type"`
+		Title    string `json:"title"`
+		DateTime string `json:"dateTime"` // Получаем дату и время в одном поле
+		Tickets  int    `json:"tickets"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&rawEvent); err != nil {
@@ -31,18 +31,18 @@ func (h *EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parsedDate, err := time.Parse("2006-01-02", rawEvent.Date)
+	parsedDateTime, err := time.Parse("2006-01-02T15:04", rawEvent.DateTime) // Парсим дату и время
 	if err != nil {
-		log.Println("Ошибка парсинга даты:", err)
-		http.Error(w, "Некорректный формат даты", http.StatusBadRequest)
+		log.Println("Ошибка парсинга даты и времени:", err)
+		http.Error(w, "Некорректный формат даты и времени", http.StatusBadRequest)
 		return
 	}
 
 	event := models.Event{
-		Type:    rawEvent.Type,
-		Title:   rawEvent.Title,
-		Date:    parsedDate,
-		Tickets: rawEvent.Tickets,
+		Type:     rawEvent.Type,
+		Title:    rawEvent.Title,
+		DateTime: parsedDateTime, // Сохраняем в БД как time.Time
+		Tickets:  rawEvent.Tickets,
 	}
 
 	h.storage.AddEvent(event)

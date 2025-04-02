@@ -79,7 +79,7 @@ func (s *PostgresStorage) InitDB() error {
 func (s *PostgresStorage) AddEvent(event models.Event) error {
 	event.ID = 0
 	query := `INSERT INTO events (type, title, date, tickets) VALUES ($1, $2, $3, $4) RETURNING id`
-	err := s.db.QueryRow(query, event.Type, event.Title, event.Date, event.Tickets).Scan(&event.ID)
+	err := s.db.QueryRow(query, event.Type, event.Title, event.DateTime, event.Tickets).Scan(&event.ID)
 	return err
 }
 
@@ -87,7 +87,7 @@ func (s *PostgresStorage) GetEventByID(eventID int) (models.Event, bool) {
 
 	var e models.Event
 	query := `SELECT id, type, title, date, tickets FROM events WHERE id = $1`
-	err := s.db.QueryRow(query, eventID).Scan(&e.ID, &e.Type, &e.Title, &e.Date, &e.Tickets)
+	err := s.db.QueryRow(query, eventID).Scan(&e.ID, &e.Type, &e.Title, &e.DateTime, &e.Tickets)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return models.Event{}, false
@@ -109,7 +109,7 @@ func (s *PostgresStorage) GetEventsByDate(date time.Time) ([]models.Event, error
 
 	for rows.Next() {
 		var e models.Event
-		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.Date, &e.Tickets); err != nil {
+		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.DateTime, &e.Tickets); err != nil {
 			return nil, err
 		}
 		result = append(result, e)
@@ -129,7 +129,7 @@ func (s *PostgresStorage) GetAllEvents() ([]models.Event, error) {
 
 	for rows.Next() {
 		var e models.Event
-		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.Date, &e.Tickets); err != nil {
+		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.DateTime, &e.Tickets); err != nil {
 			return nil, err
 		}
 		result = append(result, e)
@@ -162,4 +162,13 @@ func (s *PostgresStorage) GetAllTickets() ([]models.TicketTemplate, error) {
 		result = append(result, t)
 	}
 	return result, nil
+}
+
+func (s *PostgresStorage) GetEventTime(eventID int64) (time.Time, error) {
+	var eventTime time.Time
+	err := s.db.QueryRow("SELECT date FROM events WHERE id = $1", eventID).Scan(&eventTime)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return eventTime, nil
 }

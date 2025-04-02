@@ -10,7 +10,7 @@ type TicketTemplate struct {
 	Row          *int      `json:"row,omitempty"`
 	Seat         *int      `json:"seat,omitempty"`
 	Zone         *string   `json:"zone,omitempty"`
-	EventDate    time.Time `json:"event_date"`
+	EventDate    time.Time `json:"event_date"` // Дата + время мероприятия
 	Location     string    `json:"location"`
 	TicketNumber int       `json:"ticket_number"`
 }

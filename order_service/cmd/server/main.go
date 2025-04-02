@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc/reflection"
@@ -13,8 +14,10 @@ import (
 	pb "order_service/proto/grpc/order"
 	"os"
 	"strings"
+	"time"
 	"unicode/utf8"
 
+	"github.com/streadway/amqp"
 	"google.golang.org/grpc"
 )
 
@@ -96,9 +99,65 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 
 	go sendNotification(email, eventID, zone, row, seat)
 
+	eventTime, err := s.store.GetEventTime(eventID)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось получить время события: %w", err)
+	}
+
+	sendToQueue(email, eventID, eventTime)
+
 	return &pb.CreateOrderResponse{
 		Status: fmt.Sprintf("Заказ для события %d, зона %s, ряд %d, место %d успешно создан.", eventID, zone, row, seat),
 	}, nil
+}
+
+func sendToQueue(email string, eventID int64, eventTime time.Time) {
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+	if err != nil {
+		log.Fatalf("Ошибка подключения к RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Ошибка открытия канала: %v", err)
+	}
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+		"notification_queue",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		log.Fatalf("Ошибка создания очереди: %v", err)
+	}
+
+	message := map[string]interface{}{
+		"email":      email,
+		"event_id":   eventID,
+		"event_time": eventTime.Format(time.RFC3339),
+	}
+	body, _ := json.Marshal(message)
+
+	err = ch.Publish(
+		"",
+		q.Name,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		},
+	)
+	if err != nil {
+		log.Fatalf("Ошибка отправки сообщения: %v", err)
+	}
+
+	log.Printf("Сообщение отправлено: %s", body)
 }
 
 func sendNotification(email string, eventID int64, zone string, row, seat int64) {
