@@ -12,6 +12,7 @@ import (
 	nt "order_service/proto/grpc/notifications"
 	pb "order_service/proto/grpc/order"
 	"os"
+	"strings"
 
 	"google.golang.org/grpc"
 )
@@ -29,6 +30,28 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 	row := req.Row
 	seat := req.Seat
 	email := req.Email
+
+	zones, rows, seats, err := s.store.GetZoneRowSeat(eventID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения значений tickets: %w", err)
+	}
+
+	// Проверка входных данных
+	if len(zone) != 1 {
+		return nil, fmt.Errorf("неверное значение zone: %s", zone)
+	}
+
+	if !strings.Contains(zones, zone) {
+		return nil, fmt.Errorf("зона %s отсутствует в доступных зонах: %s", zone, zones)
+	}
+
+	if (row <= 0 || row > rows) && row < 0 {
+		return nil, fmt.Errorf("номер ряда %d некорректен, должно быть от 1 до %d", row, rows)
+	}
+
+	if (seat <= 0 || seat > seats) && seat < 0 {
+		return nil, fmt.Errorf("номер места %d некорректен, должно быть от 1 до %d", seat, seats)
+	}
 
 	existsZone, existsRow, existsSeat, err := s.store.CheckEventStructure(eventID)
 	if err != nil {

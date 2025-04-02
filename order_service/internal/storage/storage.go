@@ -120,6 +120,25 @@ func toInt64Slice(arr []int) []int64 {
 	return res
 }
 
+func (s *Storage) GetZoneRowSeat(eventID int64) (string, int64, int64, error) {
+	query := `
+		SELECT zone, row, seat 
+		FROM tickets 
+		WHERE event_id = $1
+		LIMIT 1;
+	`
+
+	var zone string
+	var row, seat int64
+
+	err := s.DB.QueryRow(query, eventID).Scan(&zone, &row, &seat)
+	if err != nil {
+		return "", 0, 0, err
+	}
+
+	return zone, row, seat, nil
+}
+
 // запись в заказы
 func (s *Storage) CreateOrder(eventID int64, zone string, row int64, seat int64, email string) error {
 	query := `INSERT INTO order_tickets (event_id, zone, row, seat, user_email) VALUES ($1, $2, $3, $4, $5)`

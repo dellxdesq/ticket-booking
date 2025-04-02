@@ -49,6 +49,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123
       POSTGRES_DB: afishadb
+      TZ: "Asia/Yekaterinburg"
     ports:
       - "5432:5432"
     volumes:
