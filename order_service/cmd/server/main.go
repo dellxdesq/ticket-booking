@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
-	"ticket-booking/order_service/internal/storage"
-	nt "ticket-booking/proto/grpc/notifications"
-	pb "ticket-booking/proto/grpc/order"
+	"order_service/internal/storage"
+	nt "order_service/proto/grpc/notifications"
+	pb "order_service/proto/grpc/order"
+	"os"
 
 	"google.golang.org/grpc"
 )
@@ -113,8 +115,20 @@ func (s *orderServer) GetAvailableSeats(ctx context.Context, req *pb.GetAvailabl
 }
 
 func main() {
-	connStr := "postgres://postgres:@localhost:5432/afishadb?sslmode=disable"
-	db, err := sql.Open("pgx", connStr)
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Ошибка загрузки .env файла:", err)
+	}
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+	dbSSLMode := os.Getenv("DB_SSLMODE")
+
+	dataSourceName := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		dbUser, dbPassword, dbHost, dbPort, dbName, dbSSLMode)
+	db, err := sql.Open("pgx", dataSourceName)
 	if err != nil {
 		log.Fatalf("Ошибка подключения к БД: %v", err)
 	}

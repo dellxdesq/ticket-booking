@@ -3,11 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"log"
+	"main_service/internal/grpcclient"
+	"main_service/internal/models"
+	"main_service/internal/storage"
 	"net/http"
 	"strconv"
-	"ticket-booking/internal/grpcclient" // Путь к gRPC клиенту
-	"ticket-booking/internal/models"
-	"ticket-booking/internal/storage"
 )
 
 type OrderHandler struct {

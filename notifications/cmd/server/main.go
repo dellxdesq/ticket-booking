@@ -7,29 +7,28 @@ import (
 	"log"
 	"net"
 	"net/smtp"
+	"notifications/proto/grpc/notifications"
 	"os"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
-	pb "ticket-booking/proto/grpc/notifications"
 )
 
 type notificationServer struct {
-	pb.UnimplementedNotificationServiceServer
+	notifications.UnimplementedNotificationServiceServer
 }
 
-func (s *notificationServer) SendEmail(ctx context.Context, req *pb.EmailRequest) (*pb.EmailResponse, error) {
+func (s *notificationServer) SendEmail(ctx context.Context, req *notifications.EmailRequest) (*notifications.EmailResponse, error) {
 	err := sendEmail(req.Email, req.Subject, req.Body)
 	if err != nil {
-		return &pb.EmailResponse{Status: "Ошибка отправки"}, err
+		return &notifications.EmailResponse{Status: "Ошибка отправки"}, err
 	}
-	return &pb.EmailResponse{Status: "Отправлено"}, nil
+	return &notifications.EmailResponse{Status: "Отправлено"}, nil
 }
 
 func sendEmail(to, subject, body string) error {
-	err := godotenv.Load("../../../.env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Println("Ошибка загрузки .env файла:", err)
 		return err
@@ -79,7 +78,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterNotificationServiceServer(grpcServer, &notificationServer{})
+	notifications.RegisterNotificationServiceServer(grpcServer, &notificationServer{})
 	reflection.Register(grpcServer)
 
 	log.Println("Notification Service запущен на порту :50052")

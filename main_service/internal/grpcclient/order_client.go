@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	pb "ticket-booking/proto/grpc/order"
+	pb "main_service/proto/grpc/order"
 
 	"google.golang.org/grpc"
 )

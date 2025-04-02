@@ -3,22 +3,21 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv"
 	"log"
+	"main_service/internal/handlers"
+	"main_service/internal/storage"
 	"net/http"
 	"os"
-
 	_ "os"
-	"ticket-booking/internal/handlers"
-	"ticket-booking/internal/storage"
-
-	_ "github.com/joho/godotenv"
 )
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Ошибка загрузки .env файла")
+		log.Fatal("Ошибка загрузки .env файла:", err)
 	}
+
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbHost := os.Getenv("DB_HOST")
@@ -43,8 +42,8 @@ func main() {
 
 	http.HandleFunc("/events", eventHandler.GetEvents)
 	http.HandleFunc("/events/add", eventHandler.AddEvent)
-	http.HandleFunc("/events/{event_id}/seats", orderHandler.GetAvailableSeatsHandler)   //TODO реализовать методы вычисления свобоных мест вместо заглушки
-	http.HandleFunc("/events/{event_id}/tickets/order", orderHandler.CreateOrderHandler) //TODO реализовать реальный заказ билета вместо заглушки
+	http.HandleFunc("/events/{event_id}/seats", orderHandler.GetAvailableSeatsHandler)
+	http.HandleFunc("/events/{event_id}/tickets/order", orderHandler.CreateOrderHandler)
 	http.HandleFunc("/tickets/add", ticketHandler.AddTicketTemplate)
 	http.HandleFunc("/tickets", ticketHandler.GetTickets)
 

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package order;
+option go_package = "./proto/grpc/order";
+
+service OrderService {
+  rpc GetAvailableSeats (GetAvailableSeatsRequest) returns (GetAvailableSeatsResponse);//rpc для показа свободных мест
+  rpc CreateOrder (CreateOrderRequest) returns (CreateOrderResponse);// rpc для заказа билета
+}
+
+message GetAvailableSeatsRequest {
+  int64 event_id = 1;
+}
+
+message GetAvailableSeatsResponse {
+  int64 event_id = 1;
+  repeated Zone zones = 2;
+}
+
+message Zone {
+  string name = 1;  // Название зоны (например, "A", "B", "C" или пусто, если зон нет)
+  repeated Row rows = 2;
+}
+
+message Row {
+  int64 number = 1;  // Номер ряда (если рядов нет, то 0)
+  repeated int64 seats = 2;  // Список свободных мест
+}
+
+// Для создания заказа
+message CreateOrderRequest {
+  int64 event_id = 1;
+  string zone = 2;  // Название зоны
+  int64 row = 3;    // Номер ряда
+  int64 seat = 4;   // Номер места
+  string email = 5; // Email для уведомлений
+}
+
+message CreateOrderResponse {
+  string status = 1;  // Статус создания заказа
+}

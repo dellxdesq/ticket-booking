@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	pb "ticket-booking/proto/grpc/order"
+	pb "order_service/proto/grpc/order"
 )
 
 type Storage struct {

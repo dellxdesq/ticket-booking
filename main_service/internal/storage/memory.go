@@ -3,7 +3,7 @@ package storage
 import (
 	"database/sql"
 	"fmt"
-	"ticket-booking/internal/models"
+	"main_service/internal/models"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -53,6 +53,23 @@ func (s *PostgresStorage) InitDB() error {
 	_, err = s.db.Exec(ticketQuery)
 	if err != nil {
 		return fmt.Errorf("ошибка при создании таблицы билетов: %w", err)
+	}
+
+	orderQuery := `
+	CREATE TABLE IF NOT EXISTS order_tickets (
+    id SERIAL PRIMARY KEY,
+    event_id BIGINT NOT NULL,
+    zone TEXT NOT NULL,
+    row INT NOT NULL,
+    seat INT NOT NULL,
+    user_email TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(event_id, zone, row, seat)
+	);`
+
+	_, err = s.db.Exec(orderQuery)
+	if err != nil {
+		return fmt.Errorf("ошибка при создании таблицы заказов билетов: %w", err)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-module ticket-booking
+module main_service
 
 go 1.24.0
 

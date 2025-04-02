@@ -3,9 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"log"
+	"main_service/internal/models"
+	"main_service/internal/storage"
 	"net/http"
-	"ticket-booking/internal/models"
-	"ticket-booking/internal/storage"
 	"time"
 )
 

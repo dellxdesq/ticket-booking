@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package notifications;
+
+option go_package = "./proto/grpc/notifications";
+
+service NotificationService {
+  rpc SendEmail (EmailRequest) returns (EmailResponse);
+}
+
+message EmailRequest {
+  string email = 1;
+  string subject = 2;
+  string body = 3;
+}
+
+message EmailResponse {
+  string status = 1;
+}
