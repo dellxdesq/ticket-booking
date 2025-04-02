@@ -16,6 +16,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+var host string = "notifications:50052"
+
 type orderServer struct {
 	pb.UnimplementedOrderServiceServer
 	store *storage.Storage
@@ -76,7 +78,7 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 }
 
 func sendNotification(email string, eventID int64, zone string, row, seat int64) {
-	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
+	conn, err := grpc.Dial(host, grpc.WithInsecure())
 	if err != nil {
 		log.Printf("Ошибка подключения к Notification Service: %v", err)
 		return

@@ -10,8 +10,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+var host string = "order_service:50051"
+
 func CallCreateOrder(eventID int64, zone string, row, seat int64, email string) (*pb.CreateOrderResponse, error) {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(5*time.Second))
+	conn, err := grpc.Dial(host, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(5*time.Second))
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +39,7 @@ func CallCreateOrder(eventID int64, zone string, row, seat int64, email string) 
 }
 
 func CallGetAvailableSeats(eventID int64) (*pb.GetAvailableSeatsResponse, error) {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(5*time.Second))
+	conn, err := grpc.Dial(host, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(5*time.Second))
 	if err != nil {
 		return nil, err
 	}
