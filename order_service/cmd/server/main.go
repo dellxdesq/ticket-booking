@@ -13,6 +13,7 @@ import (
 	pb "order_service/proto/grpc/order"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"google.golang.org/grpc"
 )
@@ -37,7 +38,7 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 	}
 
 	// Проверка входных данных
-	if len(zone) != 1 {
+	if utf8.RuneCountInString(zone) != 1 {
 		return nil, fmt.Errorf("неверное значение zone: %s", zone)
 	}
 

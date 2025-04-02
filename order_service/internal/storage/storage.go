@@ -141,8 +141,8 @@ func (s *Storage) GetZoneRowSeat(eventID int64) (string, int64, int64, error) {
 }
 
 func (s *Storage) GetEventDate(eventID int64) (eventDate time.Time, err error) {
-	query := `Select date FROM events WHERE event_id = $1;`
-	err = s.DB.QueryRow(query, eventID).Scan(eventID)
+	query := `SELECT date FROM events WHERE id = $1;`
+	err = s.DB.QueryRow(query, eventID).Scan(&eventDate)
 	return
 }
 

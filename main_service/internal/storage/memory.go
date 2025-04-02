@@ -56,7 +56,7 @@ func (s *PostgresStorage) InitDB() error {
 	}
 
 	orderQuery := `
-	CREATE TABLE order_tickets (
+	CREATE TABLE IF NOT EXISTS order_tickets (
     	id SERIAL PRIMARY KEY,
     	event_id BIGINT NOT NULL,
     	zone TEXT NOT NULL,
