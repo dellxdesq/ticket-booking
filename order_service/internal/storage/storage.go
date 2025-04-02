@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	pb "order_service/proto/grpc/order"
@@ -139,10 +140,21 @@ func (s *Storage) GetZoneRowSeat(eventID int64) (string, int64, int64, error) {
 	return zone, row, seat, nil
 }
 
+func (s *Storage) GetEventDate(eventID int64) (eventDate time.Time, err error) {
+	query := `Select date FROM events WHERE event_id = $1;`
+	err = s.DB.QueryRow(query, eventID).Scan(eventID)
+	return
+}
+
 // запись в заказы
 func (s *Storage) CreateOrder(eventID int64, zone string, row int64, seat int64, email string) error {
-	query := `INSERT INTO order_tickets (event_id, zone, row, seat, user_email) VALUES ($1, $2, $3, $4, $5)`
-	_, err := s.DB.Exec(query, eventID, zone, row, seat, email)
+	eventDate, err := s.GetEventDate(eventID)
+	if err != nil {
+		log.Printf("Ошибка при получении даты ивента: %v", err)
+		return err
+	}
+	query := `INSERT INTO order_tickets (event_id, zone, row, seat, user_email, event_date) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err = s.DB.Exec(query, eventID, zone, row, seat, email, eventDate)
 	if err != nil {
 		log.Printf("Ошибка при создании заказа: %v", err)
 		return err

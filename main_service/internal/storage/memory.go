@@ -56,16 +56,17 @@ func (s *PostgresStorage) InitDB() error {
 	}
 
 	orderQuery := `
-	CREATE TABLE IF NOT EXISTS order_tickets (
-    id SERIAL PRIMARY KEY,
-    event_id BIGINT NOT NULL,
-    zone TEXT NOT NULL,
-    row INT NOT NULL,
-    seat INT NOT NULL,
-    user_email TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(event_id, zone, row, seat)
-	);`
+	CREATE TABLE order_tickets (
+    	id SERIAL PRIMARY KEY,
+    	event_id BIGINT NOT NULL,
+    	zone TEXT NOT NULL,
+    	row INT NOT NULL,
+    	seat INT NOT NULL,
+    	user_email TEXT NOT NULL,
+    	created_at TIMESTAMP DEFAULT NOW(),
+    	event_date TIMESTAMP,
+    	UNIQUE(event_id, zone, row, seat)
+    );`
 
 	_, err = s.db.Exec(orderQuery)
 	if err != nil {
