@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"ticket-booking/order_service/internal/storage"
+	nt "ticket-booking/proto/grpc/notifications"
 	pb "ticket-booking/proto/grpc/order"
 
 	"google.golang.org/grpc"
