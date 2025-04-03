@@ -17,7 +17,7 @@
     <form id="eventForm">
         <label>Название: <input type="text" id="eventTitle" required></label><br>
         <label>Тип: <input type="text" id="eventType" required></label><br>
-        <label>Дата: <input type="date" id="eventDate" required></label><br>
+        <label>Дата и время: <input type="datetime-local" id="eventDateTime" required></label><br>
         <label>Количество билетов: <input type="number" id="eventTickets" required></label><br>
         <button type="submit">Создать мероприятие</button>
     </form>
@@ -39,10 +39,10 @@
 
         const title = document.getElementById('eventTitle').value;
         const type = document.getElementById('eventType').value;
-        const date = document.getElementById('eventDate').value;
+        const dateTime = document.getElementById('eventDateTime').value; // Получаем дату и время как один параметр
         const tickets = parseInt(document.getElementById('eventTickets').value);
 
-        const eventData = { title, type, date, tickets };
+        const eventData = { title, type, dateTime, tickets };
 
         fetch('/events/add', {
             method: 'POST',
@@ -72,19 +72,20 @@
                     const eventEl = document.createElement('div');
                     eventEl.className = 'event';
                     eventEl.innerHTML = `
-                        <h3>${event.title}</h3>
-                        <p>Дата: ${event.date}</p>
-                        <button onclick="redirectToCreateTicket(${event.id}, '${event.date}')">Создать шаблон билета</button>
-                        <button onclick="redirectToOrder(${event.id})">Забронировать билет</button>
-                    `;
+                    <h3>${event.title}</h3>
+                    <p>Дата и время: ${new Date(event.dateTime).toLocaleString()}</p>
+                    <button onclick="redirectToCreateTicket(${event.id}, '${event.dateTime}')">Создать шаблон билета</button>
+                    <button onclick="redirectToOrder(${event.id})">Забронировать билет</button>
+                `;
                     eventsDiv.appendChild(eventEl);
                 });
             });
     }
 
-    function redirectToCreateTicket(eventId, eventDate) {
-        window.location.href = `create_ticket.html?eventId=${eventId}&eventDate=${eventDate}`;
+    function redirectToCreateTicket(eventId, eventDateTime) {
+        window.location.href = `create_ticket.html?eventId=${eventId}&eventDateTime=${eventDateTime}`;
     }
+
 
     function redirectToOrder(eventId) {
         window.location.href = `create_order.html?eventId=${eventId}`;

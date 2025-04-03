@@ -6,7 +6,6 @@ import (
 	"main_service/internal/models"
 	"main_service/internal/storage"
 	"net/http"
-	"time"
 )
 
 type TicketHandler struct {
@@ -30,21 +29,16 @@ func (h *TicketHandler) AddTicketTemplate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Получаем мероприятие
 	event, found := h.storage.GetEventByID(template.EventID)
 	if !found {
 		http.Error(w, "Мероприятие не найдено", http.StatusNotFound)
 		return
 	}
 
-	parsedDate, err := time.Parse("2006-01-02", event.Date.Format("2006-01-02"))
-	if err != nil {
-		log.Println("Ошибка парсинга даты события:", err)
-		http.Error(w, "Некорректный формат даты", http.StatusBadRequest)
-		return
-	}
-
+	// Передаем дату и время мероприятия в шаблон билета
 	template.Title = event.Title
-	template.EventDate = parsedDate
+	template.EventDate = event.DateTime // Теперь сохраняем полную дату и время
 
 	if err := h.storage.AddTicketTemplate(template); err != nil {
 		http.Error(w, "Ошибка добавления шаблона билета", http.StatusInternalServerError)

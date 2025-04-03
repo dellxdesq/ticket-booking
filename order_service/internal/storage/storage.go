@@ -175,3 +175,12 @@ func (s *Storage) CheckEventStructure(eventID int64) (existsZone bool, existsRow
 	err = s.DB.QueryRow(query, eventID).Scan(&existsZone, &existsRow, &existsSeat)
 	return
 }
+
+func (s *Storage) GetEventTime(eventID int64) (time.Time, error) {
+	var eventTime time.Time
+	err := s.DB.QueryRow(`SELECT "date" FROM events WHERE id = $1`, eventID).Scan(&eventTime)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return eventTime, nil
+}
