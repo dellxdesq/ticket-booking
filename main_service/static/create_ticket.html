@@ -39,6 +39,13 @@
     document.getElementById('ticketForm').addEventListener('submit', function(event) {
         event.preventDefault();
 
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Вы не авторизованы! Перенаправляем на страницу входа.');
+            window.location.href = 'login.html';
+            return;
+        }
+
         const price = parseFloat(document.getElementById('price').value);
         const title = document.getElementById('title').value || null;
         const location = document.getElementById('location').value || null;
@@ -60,7 +67,10 @@
 
         fetch('/tickets/add', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
             body: JSON.stringify(ticketData)
         }).then(response => {
             if (response.ok) {

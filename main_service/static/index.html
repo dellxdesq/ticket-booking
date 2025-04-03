@@ -30,6 +30,13 @@
     document.getElementById('eventForm').addEventListener('submit', function(event) {
         event.preventDefault();
 
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Вы не авторизованы! Перенаправляем на страницу входа.');
+            window.location.href = 'login.html';
+            return;
+        }
+
         const title = document.getElementById('eventTitle').value;
         const type = document.getElementById('eventType').value;
         const date = document.getElementById('eventDate').value;
@@ -39,7 +46,10 @@
 
         fetch('/events/add', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
             body: JSON.stringify(eventData)
         }).then(response => {
             if (response.ok) {

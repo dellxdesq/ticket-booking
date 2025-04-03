@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход</title>
+</head>
+<body>
+<h2>Вход</h2>
+<form id="loginForm">
+    <label>Email: <input type="email" id="email" required></label><br>
+    <label>Пароль: <input type="password" id="password" required></label><br>
+    <button type="submit">Войти</button>
+</form>
+<p id="status"></p>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        fetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    window.location.href = 'index.html';
+                } else {
+                    document.getElementById('status').innerText = 'Ошибка авторизации';
+                }
+            })
+            .catch(() => {
+                document.getElementById('status').innerText = 'Ошибка авторизации, перенаправляем на регистрацию...';
+                setTimeout(() => {
+                    window.location.href = 'register.html';
+                }, 1000);
+            });
+    });
+</script>
+</body>
+</html>

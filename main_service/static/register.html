@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 400px; margin: auto; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Регистрация</h2>
+
+    <form id="registerForm">
+        <label for="email">Email:</label>
+        <input type="email" id="email" required><br>
+
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" required><br>
+
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+    <p id="status"></p>
+</div>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        const registerData = { email, password };
+
+        fetch('/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(registerData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status) {
+                    document.getElementById('status').innerText = 'Регистрация успешна!';
+                    window.location.href = 'login.html';
+                } else {
+                    document.getElementById('status').innerText = 'Ошибка регистрации возможно пользователь с таким логином уже есть';
+                }
+            })
+            .catch(error => {
+                document.getElementById('status').innerText = 'Ошибка при отправке запроса';
+            });
+    });
+</script>
+</body>
+</html>
