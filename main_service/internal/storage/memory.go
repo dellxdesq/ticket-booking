@@ -73,6 +73,19 @@ func (s *PostgresStorage) InitDB() error {
 		return fmt.Errorf("ошибка при создании таблицы заказов билетов: %w", err)
 	}
 
+	userQuery := `
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		email TEXT UNIQUE NOT NULL,
+		password TEXT NOT NULL,
+		token TEXT UNIQUE
+	);`
+
+	_, err = s.db.Exec(userQuery)
+	if err != nil {
+		return fmt.Errorf("ошибка при создании таблицы пользователей: %w", err)
+	}
+
 	return nil
 }
 

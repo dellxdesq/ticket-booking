@@ -6,6 +6,7 @@ import (
 	_ "github.com/joho/godotenv"
 	"log"
 	"main_service/internal/handlers"
+	middleware "main_service/internal/service"
 	"main_service/internal/storage"
 	"net/http"
 	"os"
@@ -40,12 +41,15 @@ func main() {
 	eventHandler := handlers.NewEventHandler(store)
 	ticketHandler := handlers.NewTicketHandler(store)
 
+	http.HandleFunc("/auth/register", handlers.RegisterHandler)
+	http.HandleFunc("/auth/login", handlers.LoginHandler)
+
 	http.HandleFunc("/events", eventHandler.GetEvents)
-	http.HandleFunc("/events/add", eventHandler.AddEvent)
 	http.HandleFunc("/events/{event_id}/seats", orderHandler.GetAvailableSeatsHandler)
-	http.HandleFunc("/events/{event_id}/tickets/order", orderHandler.CreateOrderHandler)
-	http.HandleFunc("/tickets/add", ticketHandler.AddTicketTemplate)
-	http.HandleFunc("/tickets", ticketHandler.GetTickets)
+	http.HandleFunc("/events/add", middleware.AuthMiddleware(eventHandler.AddEvent))
+	http.HandleFunc("/events/{event_id}/tickets/order", middleware.AuthMiddleware(orderHandler.CreateOrderHandler))
+	http.HandleFunc("/tickets/add", middleware.AuthMiddleware(ticketHandler.AddTicketTemplate))
+	http.HandleFunc("/tickets", middleware.AuthMiddleware(ticketHandler.GetTickets))
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
