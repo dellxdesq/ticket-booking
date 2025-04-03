@@ -4,15 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход</title>
+    <style>
+        body { font-family: Consolas, sans-serif; margin: 20px; }
+        .container { max-width: 400px; margin: auto; padding: 20px; gap: 20px; }
+    </style>
 </head>
 <body>
-<h2>Вход</h2>
-<form id="loginForm">
-    <label>Email: <input type="email" id="email" required></label><br>
-    <label>Пароль: <input type="password" id="password" required></label><br>
-    <button type="submit">Войти</button>
-</form>
-<p id="status"></p>
+<div class="container">
+    <h2>Вход</h2>
+    <form id="loginForm">
+        <label>Email: <input type="email" id="email" required></label><br>
+        <label>Пароль: <input type="password" id="password" required></label><br>
+        <button type="submit">Войти</button>
+    </form>
+    <p id="status"></p>
+</div>
+
 
 <script>
     document.getElementById('loginForm').addEventListener('submit', function(event) {

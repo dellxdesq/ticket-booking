@@ -3,6 +3,8 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"main_service/internal/config"
 	"main_service/internal/models"
 	"time"
 
@@ -11,6 +13,17 @@ import (
 
 type PostgresStorage struct {
 	db *sql.DB
+}
+
+func InitStorage(cfg *config.Config) (*PostgresStorage, error) {
+	store, err := NewPostgresStorage(cfg.DSN())
+	if err != nil {
+		return nil, err
+	}
+	if err := store.InitDB(); err != nil {
+		log.Fatalf("Ошибка инициализации базы данных: %v", err)
+	}
+	return store, nil
 }
 
 func NewPostgresStorage(dataSourceName string) (*PostgresStorage, error) {

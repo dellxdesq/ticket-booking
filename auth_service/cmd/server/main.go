@@ -141,7 +141,6 @@ func main() {
 	authService := NewAuthService(store.DB, jwtSecret)
 
 	s := grpc.NewServer()
-	//authService := NewAuthService(store.DB, generateSecret())
 	pb.RegisterAuthServiceServer(s, authService)
 	reflection.Register(s)
 
