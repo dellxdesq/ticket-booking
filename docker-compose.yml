@@ -1,19 +1,6 @@
 version: '3.8'
 
 services:
-  #rabbitmq:
-  #  image: "rabbitmq:3-management"
-  #  container_name: "rabbitmq"
-  #  restart: always
-  #  ports:
-  #    - "5672:5672"   # Порт для работы с очередями
-  #    - "15672:15672" # Порт для веб-интерфейса управления RabbitMQ
-  #  environment:
-  #    RABBITMQ_DEFAULT_USER: guest
-  #    RABBITMQ_DEFAULT_PASS: guest
-  #  networks:
-  #    - app_network
-
   main_service:
     build:
       context: ./main_service
@@ -40,6 +27,19 @@ services:
       - db
     env_file:
       - auth_service/.env
+    networks:
+      - backend
+
+  notice_service:
+    build:
+      context: ./notice_service
+      dockerfile: Dockerfile
+    ports:
+      - "50054:50054"
+    depends_on:
+      - db
+    env_file:
+      - notice_service/.env
     networks:
       - backend
 
@@ -74,7 +74,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123
+      POSTGRES_PASSWORD: ybrbnf123
       POSTGRES_DB: afishadb
       TZ: "Asia/Yekaterinburg"
     ports:

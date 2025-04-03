@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
+
 	"fmt"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"order_service/internal/storage"
+	nc "order_service/proto/grpc/notice"
 	nt "order_service/proto/grpc/notifications"
 	pb "order_service/proto/grpc/order"
 	"os"
@@ -17,11 +18,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/streadway/amqp"
 	"google.golang.org/grpc"
 )
 
 var host string = "notifications:50052"
+var host2 string = "notice_service:50054"
 
 type orderServer struct {
 	pb.UnimplementedOrderServiceServer
@@ -99,65 +100,61 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 
 	go sendNotification(email, eventID, zone, row, seat)
 
-	//eventTime, err := s.store.GetEventTime(eventID)
-	//if err != nil {
-	//	return nil, fmt.Errorf("не удалось получить время события: %w", err)
-	//}
+	eventTime, err := s.store.GetEventTime(eventID)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось получить время события: %w", err)
+	}
 
-	//sendToQueue(email, eventID, eventTime)
+	go scheduleEventReminder(email, eventID, eventTime)
 
 	return &pb.CreateOrderResponse{
 		Status: fmt.Sprintf("Заказ для события %d, зона %s, ряд %d, место %d успешно создан.", eventID, zone, row, seat),
 	}, nil
 }
 
-func sendToQueue(email string, eventID int64, eventTime time.Time) {
-	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+func scheduleEventReminder(email string, eventID int64, eventTime time.Time) {
+	// Переводим время в локальный часовой пояс
+	reminderTime := eventTime.Add(-1 * time.Minute)
+	timeUntilReminder := time.Until(reminderTime)
+
+	log.Printf("Время события из БД (без изменений): %s", eventTime.Format(time.RFC3339))
+	log.Printf("Текущее локальное время: %s", time.Now().Format(time.RFC3339))
+	log.Printf("Локальное время события: %s", eventTime.Format(time.RFC3339))
+	log.Printf("Локальное время напоминания: %s", reminderTime.Format(time.RFC3339))
+	log.Printf("Осталось до напоминания: %v", timeUntilReminder)
+
+	if timeUntilReminder > 0 {
+		log.Printf("Запланировано уведомление для %s за 1 минуту до события %d", email, eventID)
+		time.Sleep(timeUntilReminder)
+		sendEventReminder(email, eventID)
+	} else {
+		log.Printf("Ошибка: Время напоминания уже прошло для события %d", eventID)
+	}
+}
+
+func sendEventReminder(email string, eventID int64) {
+	conn, err := grpc.Dial(host2, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("Ошибка подключения к RabbitMQ: %v", err)
+		log.Printf("Ошибка подключения к Notice Service: %v", err)
+		return
 	}
 	defer conn.Close()
 
-	ch, err := conn.Channel()
+	client := nc.NewNotificationServiceClient(conn)
+
+	subject := "Напоминание: Ваше мероприятие скоро начнется!"
+	body := fmt.Sprintf("Здравствуйте! Ваше мероприятие %d начнется через 1 минутy.", eventID)
+
+	log.Printf("Отправка напоминания на email: %s", email)
+
+	_, err = client.SendEmail(context.Background(), &nc.EmailRequest{
+		Email:   email,
+		Subject: subject,
+		Body:    body,
+	})
 	if err != nil {
-		log.Fatalf("Ошибка открытия канала: %v", err)
+		log.Printf("Ошибка отправки напоминания: %v", err)
 	}
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		"notification_queue",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		log.Fatalf("Ошибка создания очереди: %v", err)
-	}
-
-	message := map[string]interface{}{
-		"email":      email,
-		"event_id":   eventID,
-		"event_time": eventTime.Format(time.RFC3339),
-	}
-	body, _ := json.Marshal(message)
-
-	err = ch.Publish(
-		"",
-		q.Name,
-		false,
-		false,
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        body,
-		},
-	)
-	if err != nil {
-		log.Fatalf("Ошибка отправки сообщения: %v", err)
-	}
-
-	log.Printf("Сообщение отправлено: %s", body)
 }
 
 func sendNotification(email string, eventID int64, zone string, row, seat int64) {
