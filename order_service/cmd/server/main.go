@@ -49,11 +49,11 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 		return nil, fmt.Errorf("зона %s отсутствует в доступных зонах: %s", zone, zones)
 	}
 
-	if (row <= 0 || row > rows) && row < 0 {
+	if row <= 0 || row > rows {
 		return nil, fmt.Errorf("номер ряда %d некорректен, должно быть от 1 до %d", row, rows)
 	}
 
-	if (seat <= 0 || seat > seats) && seat < 0 {
+	if seat <= 0 || seat > seats {
 		return nil, fmt.Errorf("номер места %d некорректен, должно быть от 1 до %d", seat, seats)
 	}
 
@@ -99,12 +99,12 @@ func (s *orderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 
 	go sendNotification(email, eventID, zone, row, seat)
 
-	eventTime, err := s.store.GetEventTime(eventID)
-	if err != nil {
-		return nil, fmt.Errorf("не удалось получить время события: %w", err)
-	}
+	//eventTime, err := s.store.GetEventTime(eventID)
+	//if err != nil {
+	//	return nil, fmt.Errorf("не удалось получить время события: %w", err)
+	//}
 
-	sendToQueue(email, eventID, eventTime)
+	//sendToQueue(email, eventID, eventTime)
 
 	return &pb.CreateOrderResponse{
 		Status: fmt.Sprintf("Заказ для события %d, зона %s, ряд %d, место %d успешно создан.", eventID, zone, row, seat),

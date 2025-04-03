@@ -3,9 +3,7 @@ package main
 import (
 	"auth_service/internal/storage"
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
@@ -39,11 +37,11 @@ func NewAuthService(db *sql.DB, secret string) *AuthService {
 	}
 }
 
-func generateSecret() string {
-	bytes := make([]byte, 32)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
-}
+//func generateSecret() string {
+//	bytes := make([]byte, 32)
+//	rand.Read(bytes)
+//	return hex.EncodeToString(bytes)
+//}
 
 func (s *AuthService) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.AuthResponse, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -93,11 +91,22 @@ func (s *AuthService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 }
 
 func (s *AuthService) ValidateToken(ctx context.Context, req *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error) {
-	// Парсим токен и проверяем его
 	token, err := jwt.ParseWithClaims(req.Token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.jwtSecret), nil
 	})
 	if err != nil || !token.Valid {
+		return &pb.ValidateTokenResponse{Valid: false}, nil
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return &pb.ValidateTokenResponse{Valid: false}, nil
+	}
+
+	// Проверяем, соответствует ли токен тому, что в БД
+	var storedToken string
+	err = s.db.QueryRow("SELECT token FROM users WHERE email = $1", claims.Email).Scan(&storedToken)
+	if err != nil || storedToken != req.Token {
 		return &pb.ValidateTokenResponse{Valid: false}, nil
 	}
 
@@ -125,8 +134,14 @@ func main() {
 		log.Fatalf("Ошибка подключения к базе данных: %v", err)
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET не задан в .env")
+	}
+	authService := NewAuthService(store.DB, jwtSecret)
+
 	s := grpc.NewServer()
-	authService := NewAuthService(store.DB, generateSecret())
+	//authService := NewAuthService(store.DB, generateSecret())
 	pb.RegisterAuthServiceServer(s, authService)
 	reflection.Register(s)
 

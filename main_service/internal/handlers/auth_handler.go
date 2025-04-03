@@ -3,10 +3,19 @@ package handlers
 import (
 	"encoding/json"
 	"main_service/internal/grpcclient"
+	"main_service/internal/storage"
 	"net/http"
 )
 
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+type AuthHandler struct {
+	storage *storage.PostgresStorage
+}
+
+func NewAuthHandler(storage *storage.PostgresStorage) *AuthHandler {
+	return &AuthHandler{storage: storage}
+}
+
+func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 		return
@@ -27,7 +36,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": status})
 }
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 		return

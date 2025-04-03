@@ -39,7 +39,7 @@
 
         const title = document.getElementById('eventTitle').value;
         const type = document.getElementById('eventType').value;
-        const dateTime = document.getElementById('eventDateTime').value; // Получаем дату и время как один параметр
+        const dateTime = document.getElementById('eventDateTime').value;
         const tickets = parseInt(document.getElementById('eventTickets').value);
 
         const eventData = { title, type, dateTime, tickets };
@@ -57,7 +57,13 @@
                 document.getElementById('eventForm').reset();
                 fetchEvents();
             } else {
-                alert('Ошибка при создании мероприятия');
+                if(response.status === 401)
+                {
+                    alert("Вы не авторизованы! Перенаправляем на страницу входа.");
+                    window.location.href = "login.html";
+                }
+                else
+                {alert('Ошибка при создании мероприятия');}
             }
         });
     });
@@ -73,7 +79,7 @@
                     eventEl.className = 'event';
                     eventEl.innerHTML = `
                     <h3>${event.title}</h3>
-                    <p>Дата и время: ${new Date(event.dateTime).toLocaleString()}</p>
+                    <p>Дата и время: ${new Date(event.dateTime.replace('T', ' ').replace('Z', '')).toLocaleString()}</p>
                     <button onclick="redirectToCreateTicket(${event.id}, '${event.dateTime}')">Создать шаблон билета</button>
                     <button onclick="redirectToOrder(${event.id})">Забронировать билет</button>
                 `;

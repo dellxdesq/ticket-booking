@@ -10,7 +10,7 @@ import (
 
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/events") {
+		if r.URL.Path == "/events" || strings.HasSuffix(r.URL.Path, "/seat") {
 			next(w, r)
 			return
 		}

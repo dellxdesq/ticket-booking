@@ -8,24 +8,20 @@
         body { font-family: Arial, sans-serif; margin: 20px; }
         .hidden { display: none; }
         .container { max-width: 400px; margin: auto; }
+        .zone { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+        .row { margin-left: 10px; }
+        .seat { display: inline-block; padding: 5px; margin: 2px; border: 1px solid black; cursor: pointer; }
+        .seat.selected { background-color: lightblue; }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>Бронирование билета</h2>
-
     <form id="orderForm">
         <label for="eventId">ID мероприятия:</label>
         <input type="number" id="eventId" required readonly><br>
 
-        <label for="zone">Зона:</label>
-        <input type="text" id="zone"><br>
-
-        <label for="row">Ряд:</label>
-        <input type="number" id="row"><br>
-
-        <label for="seat">Место:</label>
-        <input type="number" id="seat"><br>
+        <div id="seatsContainer"></div>
 
         <label for="email">Email:</label>
         <input type="email" id="email" required><br>
@@ -41,46 +37,100 @@
         const eventId = params.get("eventId");
         if (eventId) {
             document.getElementById("eventId").value = eventId;
+            fetchSeats(eventId);
+            setInterval(() => fetchSeats(eventId), 60000); // Обновление каждую минуту
         }
     });
 
-    document.getElementById('orderForm').addEventListener('submit', function(event) {
+    function fetchSeats(eventId) {
+        fetch(`/events/${eventId}/seats`)
+            .then(response => response.json())
+            .then(data => {
+                const seatsContainer = document.getElementById("seatsContainer");
+                seatsContainer.innerHTML = "";
+                data.zones.forEach(zone => {
+                    const zoneDiv = document.createElement("div");
+                    zoneDiv.className = "zone";
+                    zoneDiv.innerHTML = `<h3>Зона: ${zone.name}</h3>`;
+                    zone.rows.forEach(row => {
+                        const rowDiv = document.createElement("div");
+                        rowDiv.className = "row";
+                        rowDiv.innerHTML = `<strong>Ряд ${row.number}:</strong> `;
+                        row.seats.forEach(seat => {
+                            const seatSpan = document.createElement("span");
+                            seatSpan.className = "seat";
+                            seatSpan.textContent = seat;
+                            seatSpan.dataset.zone = zone.name;
+                            seatSpan.dataset.row = row.number;
+                            seatSpan.dataset.seat = seat;
+                            seatSpan.onclick = selectSeat;
+                            rowDiv.appendChild(seatSpan);
+                        });
+                        zoneDiv.appendChild(rowDiv);
+                    });
+                    seatsContainer.appendChild(zoneDiv);
+                });
+            });
+    }
+
+    function selectSeat(event) {
+        document.querySelectorAll(".seat.selected").forEach(el => el.classList.remove("selected"));
+        event.target.classList.add("selected");
+        document.getElementById("zone").value = event.target.dataset.zone;
+        document.getElementById("row").value = event.target.dataset.row;
+        document.getElementById("seat").value = event.target.dataset.seat;
+    }
+
+    document.getElementById("orderForm").addEventListener("submit", function(event) {
         event.preventDefault();
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-            alert('Вы не авторизованы! Перенаправляем на страницу входа.');
-            window.location.href = 'login.html';
+            alert("Вы не авторизованы! Перенаправляем на страницу входа.");
+            window.location.href = "login.html";
             return;
         }
 
-        const eventId = document.getElementById('eventId').value;
-        const zone = document.getElementById('zone').value || null;
-        const row = document.getElementById('row').value ? parseInt(document.getElementById('row').value, 10) : null;
-        const seat = document.getElementById('seat').value ? parseInt(document.getElementById('seat').value, 10) : null;
-        const email = document.getElementById('email').value;
+        const eventId = document.getElementById("eventId").value;
+        const selectedSeat = document.querySelector(".seat.selected");
+        if (!selectedSeat) {
+            alert("Выберите место!");
+            return;
+        }
 
-        const orderData = { zone, row, seat, email };
+        const orderData = {
+            zone: selectedSeat.dataset.zone,
+            row: parseInt(selectedSeat.dataset.row, 10),
+            seat: parseInt(selectedSeat.dataset.seat, 10),
+            email: document.getElementById("email").value
+        };
 
         fetch(`/events/${eventId}/tickets/order`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
             },
             body: JSON.stringify(orderData)
         })
             .then(response => {
                 if (response.ok) {
-                    document.getElementById('status').innerText = 'Билет успешно забронирован!';
-                    document.getElementById('orderForm').reset();
+                    document.getElementById("status").innerText = "Билет успешно забронирован!";
+                    document.getElementById("orderForm").reset();
+                    fetchSeats(eventId);
                 } else {
-                    document.getElementById('status').innerText = 'Ошибка при бронировании билета';
+                    if(response.status === 401)
+                    {
+                        alert("Вы не авторизованы! Перенаправляем на страницу входа.");
+                        window.location.href = "login.html";
+                    }
+                    else
+                    {document.getElementById("status").innerText = "Ошибка при бронировании билета";}
                 }
             })
             .catch(error => {
-                console.error('Ошибка:', error);
-                document.getElementById('status').innerText = 'Ошибка сети';
+                console.error("Ошибка:", error);
+                document.getElementById("status").innerText = "Ошибка сети";
             });
     });
 </script>

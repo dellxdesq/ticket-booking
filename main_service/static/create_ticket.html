@@ -30,7 +30,7 @@
 <script>
     const urlParams = new URLSearchParams(window.location.search);
     const eventId = urlParams.get('eventId');
-    const eventDateTime = urlParams.get('eventDateTime'); // Дата + время в формате ISO 8601
+    const eventDateTime = urlParams.get('eventDateTime').replace('T', ' ').replace('Z', ''); // Дата + время в формате ISO 8601
 
     if (eventId) {
         document.getElementById('eventId').value = eventId;
@@ -92,7 +92,15 @@
                 alert('Билет успешно создан!');
                 document.getElementById('ticketForm').reset();
             } else {
-                alert('Ошибка при создании билета');
+                if (response.status === 401)
+                {
+                    alert('Вы не авторизованы! Перенаправляем на страницу входа.');
+                    window.location.href = 'login.html';
+                }
+                else
+                {
+                    alert('Ошибка при создании билета');
+                }
             }
         });
     });

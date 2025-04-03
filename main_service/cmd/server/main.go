@@ -41,9 +41,10 @@ func main() {
 	orderHandler := handlers.NewOrderHandler(store)
 	eventHandler := handlers.NewEventHandler(store)
 	ticketHandler := handlers.NewTicketHandler(store)
+	authHandler := handlers.NewAuthHandler(store)
 
-	http.HandleFunc("/auth/register", handlers.RegisterHandler)
-	http.HandleFunc("/auth/login", handlers.LoginHandler)
+	http.HandleFunc("/auth/register", authHandler.RegisterHandler)
+	http.HandleFunc("/auth/login", authHandler.LoginHandler)
 
 	http.HandleFunc("/events", eventHandler.GetEvents)
 	http.HandleFunc("/events/{event_id}/seats", orderHandler.GetAvailableSeatsHandler)
